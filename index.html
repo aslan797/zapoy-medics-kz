@@ -460,5 +460,39 @@
     <a href="tel:+77477320349" class="m-call">Позвонить</a>
 </div>
 
+<!-- WA switch: номер тянется из https://dash.onmed.kz/wa.json -->
+<script>
+(function () {
+var SRC = "https://dash.onmed.kz/wa.json";
+var WA = null, KNOWN = {};
+function norm(s){ var d=(s||'').replace(/\D/g,''); if(d.length===11&&d[0]==='8') d='7'+d.slice(1); return d; }
+function pretty(d){ return "+"+d[0]+" "+d.slice(1,4)+" "+d.slice(4,7)+" "+d.slice(7,9)+" "+d.slice(9); }
+function waNum(h){ var m=h.match(/(?:wa\.me\/|phone=)(\+?\d+)/i); return m?norm(m[1]):''; }
+function run(){
+if(!WA) return;
+document.querySelectorAll('a[href]').forEach(function(a){
+var h=a.getAttribute('href'); if(!h) return;
+if(!/wa\.me|whatsapp\.com|whatsapp:\/\//i.test(h)) return;
+var d=waNum(h);
+if(d && d!==WA) a.setAttribute('href', h.replace(/(wa\.me\/|phone=)\+?\d+/i, '$1'+WA));
+});
+var re=/\+?[\d][\d\-\s()]{8,}\d/g;
+(function walk(n){
+if(n.nodeType===3 && /\d/.test(n.nodeValue)){
+n.nodeValue=n.nodeValue.replace(re,function(m){ var d=norm(m); if(KNOWN[d] && d!==WA) return pretty(WA); return m; });
+} else if(n.nodeType===1 && n.tagName!=='SCRIPT' && n.tagName!=='STYLE'){ for(var i=0;i<n.childNodes.length;i++) walk(n.childNodes[i]); }
+})(document.body);
+}
+function arm(){ run(); setTimeout(run,800); setTimeout(run,2500); setTimeout(run,5000); }
+fetch(SRC, {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
+var w = norm(j && j.wa);
+if(!/^7\d{10}$/.test(w)) return;
+WA = w; KNOWN[w] = 1;
+(j.known||[]).forEach(function(k){ var d=norm(k); if(d) KNOWN[d]=1; });
+if(document.readyState!=="loading") arm(); else document.addEventListener("DOMContentLoaded",arm);
+window.addEventListener("load",run);
+}).catch(function(){});
+})();
+</script>
 </body>
 </html>
